@@ -1,6 +1,9 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import requests
+import zipfile
+import os
+import shutil
 from lxml import html
 
 today = datetime.today()
@@ -29,5 +32,23 @@ html_limpo = html.tostring(tree, pretty_print=True, encoding='unicode')
 print(html_limpo)
 hrefs = [a.get('href') for a in tree.xpath('//a[@href]')]
 print("\nHREFs encontrados:")
-for href in hrefs:
-    print(href)
+
+for i, href in enumerate(hrefs):
+    ########################## Se o arquivo já existir, nao baixar novamente
+    ##CÓDIGO
+    ##########################
+    arquivo = requests.get(f'{url_ultimo_mes_atualizado}{href}')
+    with open(href, "wb") as file:
+        for chunk in arquivo.iter_content(chunk_size=8192):
+            file.write(chunk)
+    print(f"Arquivo Baixado: {href}")
+    
+    if not os.path.exists('tmp'):
+        os.mkdir('tmp')
+    with zipfile.ZipFile(href,"r") as zip_ref:
+        zip_ref.extractall('tmp')
+    print(f"Arquivo Descompactado: {href}")
+    
+    arquivo_renomeado = href.replace('.zip','.csv')
+    arquivo_extraido = os.listdir('tmp')[0]
+    shutil.move(f'tmp/{arquivo_extraido}',arquivo_renomeado)
